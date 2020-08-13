@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<style type="text/css">
+			body {
+				margin: 0;
+				padding: 0;
+			}
+
+			/* 头部 */
+			#header {
+				width: 100%;
+				height: 40px;
+				line-height: 40px;
+				float: left;
+				border-bottom: 5px solid #C6C6C6;
+				border-radius: 5px 5px;
+				/* padding-left: 20px; */
+				background-image: linear-gradient(0deg, whitesmoke, whitesmoke 60%, whitesmoke);
+			}
+
+			#header span {
+				margin-left: 20px;
+			}
+
+			/* 中间 */
+			#middle {
+				padding: 20px;
+			}
+
+			/* 尾部 */
+			#footer {
+				padding: 20px;
+			}
+
+			#form1 {
+				width: 100%;
+				height: 40px;
+				float: left;
+			}
+
+			#form1 button:nth-of-type(3) {
+				float: right;
+			}
+
+			table {
+				width: 100%;
+				border: 1px solid #C6C6C6;
+				text-align: center;
+			}
+
+			#tr1 :nth-of-type(4) {
+				width: 600px;
+			}
+
+			#tr1 {
+				background: whitesmoke;
+			}
+
+			a:hover {
+				color: #515151;
+				cursor: pointer;
+			}
+
+			button {
+				border-radius: 5px 5px;
+			}
+
+			.c {
+				color: blue;
+			}
+
+			#tr4 {
+				text-align: right;
+			}
+		</style>
+	</head>
+	<body>
+		<div>
+			<div id="header">
+				<span>用户管理中心</span>
+			</div>
+			<br /><br />
+			<div id="middle">
+				<form id="form1" method="post">
+					ID<input type="text" size="5" />
+					用户名<input type="text" size="5" />
+					中文名<input type="text" size="5" />
+					<button>搜索</button>
+					<button>取消</button>
+					<button>添加用户</button>
+				</form>
+			</div>
+			<div id="footer">
+				<table id="table1" width="1200px" border="1" bordercolor="whitesmoke">
+					<tr id="tr1">
+						<th>用户名ID</th>
+						<th>用户名</th>
+						<th>中文名</th>
+						<th>跳转路径</th>
+						<th>等级</th>
+						<th>状态</th>
+						<th>创建时间</th>
+						<th>操作</th>
+					</tr>
+					<tr>
+						<td>2</td>
+						<td>lisi</td>
+						<td>李四</td>
+						<td>12345631</td>
+						<td>普通管理员</td>
+						<td></td>
+						<td></td>
+						<td>
+							<a>修改</a>
+							<a>删除</a>
+						</td>
+					</tr>
+					<tr>
+						<td>1</td>
+						<td>zhangsan</td>
+						<td>张三</td>
+						<td>123456</td>
+						<td>普通管理员</td>
+						<td></td>
+						<td></td>
+						<td>
+							<a>修改</a>
+							<a>删除</a>
+						</td>
+					</tr>
+
+				</table>
+			</div>
+		</div>
+	</body>
+	<script src="http://localhost:8080/js/jquery-2.1.4.min.js"></script>
+	<script type="text/javascript">
+		$(function() {
+			refurbishIndex();
+		})
+
+		function refurbishIndex() {
+			$.ajax({
+				type: "post",
+				url: "/user/getuserlist",
+				data: {},
+				async: false,
+				success: function(data) {
+					console.log(data);
+					var table1 = $("#table1");
+					for (var i = 0; i < data.length; i++) {
+						var tr = $(
+							"<tr>" +
+							"<td>" + data[i].id + "</td>" +
+							"<td>" + data[i].englishName + "</td>" +
+							"<td>" + data[i].chineseName + "</td>" +
+							"<td>" + data[i].url + "</td>" +
+							"<td>" + data[i].level + "</td>" +
+							"<td>" + data[i].state + "</td>" +
+							"<td>" + data[i].createDate + "</td>" +
+							"<td>" +
+							"<a>修改</a>" +
+							"<a>删除</a>" +
+							"</td>" +
+							"</tr>"
+						);
+						table1.append(tr);
+					}
+					var tr2 = (
+						"<tr id=" + tr4 + ">" +
+							"<td colspan=" + 8 + ">" + "2 / 2 页 18 条 / 页 共20条 首页 上一页 下一页 尾页 跳到" +
+								"<input type=" + text + " size=" + 2 + " />" +
+								页 + "<button>" + GO + "</button>" + "</td>" +
+						"</tr>"
+					)
+					table1.append(tr2);
+				}
+			});
+		}
+	</script>
+</html>

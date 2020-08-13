@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+ <head> 
+  <meta charset="utf-8" /> 
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,Chrome=1" /> 
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" /> 
+  <meta name="renderer" content="webkit" /> 
+  <meta name="author" content="leslie" /> 
+  <title>企查查</title> 
+  <script type="text/javascript" src="/jquery/js/jquery.min.js"></script> 
+  <script type="text/javascript" src="/jquery/js/echarts2.js"></script> 
+  <script type="text/javascript" src="/jquery/js/custom.js"></script> 
+  <script type="text/javascript" src="/jquery/js/jquery.slimscroll.min.js"></script> 
+  <script type="text/javascript">
+        var qrcodePolling = false;
+    </script> 
+ </head> 
+ <body> 
+  <header class="header navi-header box-shadow "></header> 
+  <style type="text/css"> 
+    html,body{
+        height: 100%;
+        background-color: #fff;
+    }
+   
+    .mao-main{
+        width: 100%;
+    }
+
+    .stock-name{
+        color: #fe5151;
+    }
+    .water-mark{
+        position: absolute;
+        z-index: 15;
+        font-size: 12px;
+        color: #aaa;
+        text-align: center;
+        width: 100%;
+        bottom: 20px;
+    }
+
+    .bsBox, .bsBox *{
+        box-sizing:content-box;
+    }
+  
+</style> 
+
+
+
+<button id="save" onclick="saveImg()">保存图片</button>
+<div id="main" class="mao-main" style="height: 100%;width: 100%;"></div>
+<script type="text/javascript">
+
+var myChart;
+var showKeyNo;
+var Text = require('zrender/shape/Text');
+var ImageShape = require('zrender/shape/Image');
+var Rectangle = require('zrender/shape/Rectangle');
+var treeId = 1;
+var _currentKeyNo;
+var canEditRect = false;
+var data;
+
+function getQueryString(name) {   
+  location.href.replace("#","");   
+  // 如果链接没有参数，或者链接中不存在我们要获取的参数，直接返回空        
+  if(location.href.indexOf("?")==-1 || location.href.indexOf(name+'=')==-1)     {           
+   return '';       
+  }         
+   // 获取链接中参数部分        
+   var queryString = location.href.substring(location.href.indexOf("?")+1);         
+   // 分离参数对 ?key=value&key2=value2        
+   var parameters = queryString.split("&");         
+  
+   var pos, paraName, paraValue;        
+   for(var i=0; i<=parameters.length; i++) {   
+   // 获取等号位置            
+   pos = parameters[i].split('=');            
+   if(pos == -1) { continue; }             
+   // 获取name 和 value            
+   paraName = pos[0];            
+   paraValue = pos[1];            
+   // 如果查询的name等于当前name，就返回当前值，同时，将链接中的+号还原成空格           
+   if(paraName == name) {        
+    return decodeURIComponent(paraValue.replace(/\+/g, " "));            
+   }        
+   }        
+  return '';    
+}
+
+$(document).ready(function () {
+    // resizeScreen();
+    var json = getQueryString("jsonDate");
+    if(json != null && json != '' && json != undefined){
+        data = JSON.parse(json);
+    }else{
+        data = JSON.parse(sessionStorage.getItem('dataMsgDjgtz'));
+    }
+    myChart = echarts.init(document.getElementById('main'));
+    getData();
+    adjustTreeView();
+});
+
+window.onresize=function(){
+    //resizeScreen();
+}
+var rootData;
+var gudongData;
+var touziData;
+var treeTopPadding = 50;
+
+//处理函数
+function getData(){
+    
+    $('#load_data').show();  
+    rootData = data;
+    touziData = data;
+    for(var i=0;i<data.length;i++){
+    	transTree(data[i].touzi,2);
+    }
+    // transTree(touziData,2);
+    drawGuquan(touziData,65);
+                
+}
+
+//计算最左边节点和最右边节点的间隔即为树图宽度
+function  getTreeWidth(zr)  {
+        var  nodes  =  zr.storage._roots;
+        var  max  =  0;
+        var  min  =  0;
+        for(var  i=0;  i  <  nodes.length;  i++){
+                if(nodes[i].type  ==  'image'  ||  nodes[i].type  ==  'icon'){
+                        var  nodeX  =  nodes[i].style.x;
+                        if(nodeX  >  max){
+                                max  =  nodeX;
+                                rightNode  =  nodes[i];
+                                continue;
+                        }
+                        if(nodeX  <  min){
+                                min  =  nodeX;
+                        }
+                }
+        }
+        return max  -  min;
+}
+
+
+//缩放函数
+function adjustTreeView(){
+    var zr = myChart.getZrender();
+    var domWidth = zr.painter.getWidth(); //获取canvas宽度
+    var treeWidth = getTreeWidth(zr);
+    if (treeWidth <= domWidth){
+        var adjustSize = domWidth / treeWidth  * 0.45; //多缩小0.05不至于完全充盈dom
+        var lastNodeX = rightNode.style.x * adjustSize;
+        var rightOffset = (domWidth - lastNodeX) - (domWidth - treeWidth * adjustSize)/1.22; //尽可能的让其居中
+        zr.painter._layers[1].scale = [ adjustSize, adjustSize, 50, 50 ]; //前两个为缩放大小，后两个为缩放原点
+        zr.painter._layers[1].position = [rightOffset, treeTopPadding ]; //偏移量
+        myChart.refresh();
+    }else{
+        var adjustSize = domWidth / treeWidth  * 0.6; //多缩小0.05不至于完全充盈dom
+        var lastNodeX = rightNode.style.x * adjustSize;
+        var rightOffset = (domWidth - lastNodeX) - (domWidth - treeWidth * adjustSize)/1.7; //尽可能的让其居中
+        zr.painter._layers[1].scale = [ adjustSize, adjustSize, 50, 50 ]; //前两个为缩放大小，后两个为缩放原点
+        zr.painter._layers[1].position = [rightOffset, treeTopPadding ]; //偏移量
+        myChart.refresh();
+    }  
+}
+
+//保存图片
+function saveImg(){
+    if(isFullScreen()){
+      exitFullScreen();
+      setTimeout(function() {
+        jietu();
+      }, 1000);
+    }else{
+      jietu();
+    }
+    function jietu(){
+        var jietuMask=document.createElement("div"); 
+        var width = 1680;
+        var height = 900;
+        var minX = 0;
+        var maxX = 0;
+        var minY = 300;
+        var maxY = 0;
+        var moveDown = 0;
+        var moveRight = 0;
+        let datanum = data.length;
+
+        var shapeList = myChart.getZrender().storage.getShapeList();
+        for(var i=0;i<shapeList.length;i++){
+            if(shapeList[i].style&&shapeList[i].style.iconType=='rectangle'){
+                if(shapeList[i].style.x>maxX){
+                    maxX = shapeList[i].style.x;
+                }
+                if(shapeList[i].style.x<minX){
+                    minX = shapeList[i].style.x;
+                }
+                if(shapeList[i].style.y>maxY){
+                    maxY = shapeList[i].style.y;
+                }
+                if(shapeList[i].style.y<minY){
+                    minY = shapeList[i].style.y;
+                }
+            }
+        }
+
+        
+        let moveWidthNum = [5.5,20,25,25,30,40,40,20,40,20,15,15,18,18,15];
+        let moveHeightNum = [40,30,30,30,30,40,25,25,25,30,35,40,45,50,55];
+
+        let widthNum = [
+            {width: 800,height:400,size: 0},
+            {width: 1200,height:600,size: 45},
+            {width: 1500,height:600,size: 33},
+            {width: 2000,height:600,size: 24},
+            {width: 3000,height:600,size: 18},
+            {width: 4000,height:600,size: 16},
+            {width: 4000,height:600,size: 13},
+            {width: 4000,height:600,size: 12},
+            {width: 5000,height:600,size: 10},
+            {width: 7000,height:600,size: 9},
+            {width: 7000,height:600,size: 9},
+            {width: 7000,height:650,size: 8},
+            {width: 7000,height:700,size: 7.5},
+            {width: 9000,height:700,size: 7},
+            {width: 12000,height:700,size: 6.5},
+        ]
+        num = moveWidthNum[datanum - 1];
+        num1 = moveHeightNum[datanum - 1];
+        if((maxX-minX+300)>width){
+            width = maxX-minX+300;
+            moveRight = -(maxX+minX-myChart.getZrender().getWidth()+146)/num;
+        }else{
+            moveRight = -(maxX+minX-myChart.getZrender().getWidth()+146)/num;
+        }
+        if((maxY-minY+300)>900){
+            height = maxY-minY+300;
+        }
+        moveDown = -(maxY+minY-myChart.getZrender().getHeight())/2-num1;
+
+        width = widthNum[datanum - 1].width;
+        height = widthNum[datanum - 1].height;
+        drawGuquan(data, widthNum[datanum - 1].size);
+
+
+        var layer = myChart.getZrender().painter._layers[1];
+        var bS = layer.scale.concat();
+        var bP = layer.position.concat();
+        layer.scale = [1,1,0,0];
+        layer.position = [0,0];
+        var bW = myChart.getZrender().getWidth();
+        var bH = myChart.getZrender().getHeight();
+
+        $('#main').width(width);
+        $('#main').height(height);
+
+        var zdW = myChart.getZrender().getWidth();
+        var zdH = myChart.getZrender().getHeight();
+        myChart.resize();
+        myChart.getZrender().painter.refresh();
+        initZrender(true);
+        layer.position[0] = moveRight;
+        layer.position[1] = moveDown;
+        var shape1 = new Rectangle({
+            style: {
+                x: -1000-moveRight,
+                y: -1000-moveDown,
+                width: width+1000,
+                height: height+1000,
+                color:'#fff'
+            } 
+        });
+        shape1.zlevel=1;
+        shape1.z=-2;
+        shape1.ndelete = true;
+        myChart.getZrender().addShape(shape1);
+        for(var i=0;i<width+100;i+=300){
+            for(var j=0;j<height+100;j+=228){
+                var shapeSy = new ImageShape({
+                    style: {
+                        image:'/material/theme/chacha/cms/v2/images/shuiying2.png',
+                        x: i-moveRight,
+                        y: j-moveDown,
+                        width:300,
+                        height:228
+                        
+                    }  
+                });
+                shapeSy.zlevel=1;
+                shapeSy.z=-1;
+                shapeSy.ndelete = true;
+                myChart.getZrender().addShape(shapeSy);
+            }
+        }
+
+        var shape3 = new Text({
+            style: {
+                x: width/2-165-moveRight,
+                y: height-30-moveDown,
+                // text: '股权穿透图由氪度提供',
+                strokeColor:'#999',
+                color : '#999' ,
+                textFont:'normal 12px 微软雅黑',
+                lineWidth :0,
+            }  
+        });
+        shape3.zlevel=1;
+        shape3.z=-1;
+        shape3.ndelete = true;
+        myChart.getZrender().addShape(shape3);
+
+        setTimeout(function() {
+            var canvas = $('#main canvas')[1];
+            var isIE11 = (!!window.ActiveXObject || "ActiveXObject" in window);
+            if(isIE11){
+                downloadimg(canvas);
+            }else{
+                download(canvas,'jpg');
+            }
+            
+            $('#main').width('100%');
+            $('#main').height(bH);
+            drawGuquan(data,65);
+            myChart.resize();
+            layer.scale = bS;
+            layer.position = bP;
+            myChart.getZrender().render();
+            initZrender();
+            $(jietuMask).css('display','none');
+        }, 300);
+    }
+}
+
+//判断数据
+function transTree(data,type){
+	if(!data) return;
+    data.children = data.DetailList;
+    data.DetailList = undefined;
+    data.treeId = treeId;
+    if(type==2){
+        data.isTouzi = true;
+    }
+    var fontSize = 12;
+    if(data.ShortStatus=='注销'||data.ShortStatus=='吊销'){
+        data.Name = '【'+data.ShortStatus+'】'+data.Name;
+    }
+    if(data.Name.length>20){
+        data.name = data.Name.substr(0,19)+'…';
+        data.ltext = true;
+    }else{
+        data.name = data.Name;
+    }
+    if(data.Org==2&&data.Name.length>8){
+        data.name = data.Name.substr(0,7)+'…';
+    }
+    data.name = data.name.replace(/(.{10})(?=.)/g, '$1\n');
+
+    if(data.StockRightNum){
+        data.subtext = '持股数：'+data.StockRightNum+'';
+    }else if(data.ShouldCapi){
+        
+        data.subtext = '认缴金额：'+data.ShouldCapi;
+    }
+    if (data.KeyNo) {
+        if(data.Tags){
+            for(var i=0; i<data.Tags.length; i++){
+                if(data.Tags[i].Type==402){
+                    data.tag = data.Tags[i].Name;
+                }
+            }
+        }
+    }
+
+    if(data.Tags){
+        $.each(data.Tags,function(index,vo){
+            if(vo.Type==2){
+                data.tag = '上市公司';
+                data.list = true;
+            }else if(vo.Type==1){
+                data.tag = '新三板公司';
+                data.list = true;
+            }else if(vo.Type==401){
+                data.tag = '港股上市';
+                data.list = true;
+            }
+        });
+    }
+
+    data.editable = true;
+    data.symbol = 'rectangle';
+    data.symbolSize= [146, 62];
+    if(data.tag){
+        data.symbolSize= [146, 82];
+    }
+    data.labelClick = true;
+    data.itemStyle =  {
+        normal: {
+            color: "#fff",
+            borderWidth: "1",
+            borderColor: "#ccc",
+            label: {
+                show: true,
+                position: "inside",
+                textStyle: {
+                    fontFamily: "MicroSoft YaHei",
+                    fontSize: fontSize,
+                    color:'#333',
+                    fontStyle: "normal",
+                },
+            }
+        },
+        emphasis: {
+            color: "rgba(255,255,255,0)",
+            borderWidth: "1",
+            borderColor: "rgba(255,255,255,0)",
+        }
+    };
+
+    if(data.Org==2){
+        data.symbol = 'rectangle';
+        data.clickable = true;
+        data.labelClick = false;
+        data.symbolSize= [146, 55];
+        data.itemStyle =  {
+            normal: {
+                color: "#F3F9FE",
+                borderWidth: "1",
+                borderColor: "#128bed",
+                label: {
+                    show: !0,
+                    position: "inside",
+                    textStyle: {
+                        color:'#333',
+                        fontFamily: "MicroSoft YaHei",
+                        fontSize: 14,
+                        fontStyle: "normal",
+                    },
+                }
+            },
+            emphasis: {
+                color: "rgba(255,255,255,0)",
+                borderWidth: "1",
+                borderColor: "rgba(255,255,255,0)",
+            }
+        };
+    }
+    
+    var children = data.children;
+    if(children){
+        for(var i=0;i<children.length;i++){
+            transTree(children[i],type);
+            children[i] = addTampArrow(children[i],fontSize);
+        }
+    }
+    
+    if(type==1){
+        if(rootData.kzr){
+            if(data.KeyNo){
+                if(data.KeyNo==rootData.kzr.ControllerData.KeyNo){
+                    data.kzr = true;
+                }
+            }else{
+                if(data.Name==rootData.kzr.ControllerData.Name){
+                    data.kzr = true;
+                }
+            }
+        }
+        if(rootData.syr){
+            $.each(rootData.syr.Names,function(index,vo){
+                if(data.KeyNo){
+                    if(data.KeyNo==vo.KeyNo){
+                        data.syr = vo.PercentTotal;
+                    }
+                }else{
+                    if(data.Name==vo.Name){
+                        data.syr = vo.PercentTotal;
+                    }
+                }
+            })
+        }
+    }else if(type==2){
+        if(rootData.kg){
+            $.each(rootData.kg.Names,function(index,vo){
+                if(type==2&&data.KeyNo&&data.KeyNo==vo.KeyNo){
+                    data.kg = true;
+                }
+            })
+        }
+    }
+    treeId++;
+}
+
+function addTampArrow(cnode,fontSize){
+    var tamp = cnode;
+    var Ratio = (!cnode.Percent||cnode.Percent=='0%')?'':cnode.Percent;
+    // if(Ratio){
+    //     Ratio = (parseFloat(cnode.Percent.substr(0,cnode.Percent.length-1)).toFixed(4))*10000/10000+'%';
+    //     tamp.ratio = Ratio;
+    // }
+    var labelShow = (Ratio != '0%');
+    cnode = {
+        name:Ratio,
+        symbol: "arrowright",
+        symbolSize: [12, 12],
+        tooltip: {
+            show: !1
+        },
+        clickable: !1,
+        hoverable:false,
+        itemStyle: {
+            normal: {
+                color: "#128bed",
+                borderWidth:0,
+                label: {
+                    show: labelShow,
+                    position: "right",
+                    textStyle: {
+                        fontFamily: "MicroSoft YaHei",
+                        fontSize: fontSize,
+                        fontStyle: "normal",
+                    },
+                }
+            },
+            emphasis: {
+                color: "#128bed",
+                borderWidth:0,
+                label: {
+                    show: labelShow,
+                    position: "right",
+                    textStyle: {
+                        fontFamily: "MicroSoft YaHei",
+                        fontSize: fontSize,
+                        fontStyle: "normal",
+                    },
+                }
+            }
+        },
+        lineStyle: {
+            width: 1,
+            color: "#333"
+        },
+        children:[tamp]
+    } 
+    return cnode;
+}
+
+//股权穿透图
+function drawGuquan(data,lwidth){
+    myChart.clear();
+    option = {
+        title : {
+            text: '',
+        },
+        
+        series : [
+            
+        ]
+    };
+    var roam = true;
+    if(window.iframe){
+        roam = 'move';
+    }
+    //图表位置
+    if(touziData){
+    	for(var i=0;i<data.length;i++){
+    		var a = lwidth;
+    		option.series.push(
+		        {
+		            type: "tree",
+		            orient: "horizontal",
+		            nodePadding: 100,
+		            layerPadding: 120,
+		            symbol:  "circle",
+		            roam: roam,
+		            rootLocation: {
+                                // "x": (i*a+10)+'%',
+                                "x": (i*a+10)+'%',
+		                        "y": "100%"
+		                    },
+		            //direction:"inverse",
+		            data: [data[i].touzi],
+		        }
+	        )
+    	}
+    }
+    if(touziData){
+    	for(var i=0;i<data.length;i++){
+    		option.series[i].rootLocation.y = '45%';
+    	}
+    }
+    myChart.setOption(option);
+    // adjustTreeView();
+    initZrender();
+}
+
+function initZrender(jietu){
+    var shapeList = myChart.getZrender().storage.getShapeList();
+    for(var i=0;i<shapeList.length;i++){
+        if(shapeList[i].clickcom||shapeList[i].ndelete){
+            myChart.getZrender().delShape(shapeList[i].id);
+        }
+        if(shapeList[i]._echartsData&&shapeList[i]._echartsData._data&&shapeList[i].style.text){
+            shapeList[i].style.text = shapeList[i].style.text.replace(/^\s+|\s+$/g,'');
+        }
+    }
+    for(var i=0;i<shapeList.length;i++){
+        if(shapeList[i]._echartsData&&shapeList[i]._echartsData._data.subtext){
+            shapeList[i].style.text = shapeList[i].style.text+'\n';
+            var shapeY = shapeList[i].rotation[2]+12;
+            if(shapeList[i]._echartsData._data.name.length>10){
+                shapeY = shapeList[i].rotation[2]+16;
+            }
+            if(shapeList[i]._echartsData._data.Org==2){
+                shapeY = shapeList[i].rotation[2]+11;
+            }
+            if(shapeList[i]._echartsData._data.tag){
+                if(shapeList[i]._echartsData._data.name.length>10){
+                    shapeY = shapeList[i].rotation[2]+4;
+                }else{
+                    shapeY = shapeList[i].rotation[2]+1;
+                }
+            }
+            var shape = new Text({
+              style: {
+                  x: shapeList[i].rotation[1],
+                  y: shapeY,
+                  text: shapeList[i]._echartsData._data.subtext,
+                  color : '#666' ,
+                  textFont:'normal 11px 微软雅黑',
+                  textAlign:'center',
+                  lineWidth :0,
+              },
+              highlightStyle : {
+                  lineWidth :0,
+                  color : '#666' ,
+                  strokeColor:'rgba(255,255,255,0)',
+                }   
+            });
+            shape.zlevel = 1;
+            shape.z = 5;
+            shape.ndelete = true;
+            shape.hoverable = false;
+            myChart.getZrender().addShape(shape);
+        }
+        if(shapeList[i]._echartsData&&shapeList[i]._echartsData._data.extend&&!jietu){
+            var iconImg = '';
+            var isIE11 = (!!window.ActiveXObject || "ActiveXObject" in window);
+            if(shapeList[i]._echartsData._data.extend==1){
+                if(isIE11){
+                    iconImg = 'material/theme/chacha/cms/v2/images/tupu_cross.png';
+                }else{
+                    iconImg = 'material/theme/chacha/cms/v2/images/tupu_cross.svg';
+                }
+            }else if(shapeList[i]._echartsData._data.extend==2){
+                if(isIE11){
+                    iconImg = 'material/theme/chacha/cms/v2/images/tupu_minus.png';
+                }else{
+                    iconImg = 'material/theme/chacha/cms/v2/images/tupu_minus.svg';
+                }
+                
+            }
+            var shapeY = shapeList[i].rotation[2];
+            if(shapeList[i]._echartsData._data.isTouzi){
+                shapeY = shapeY + shapeList[i].style.height/2;
+            }else{
+                 shapeY = shapeY - shapeList[i].style.height/2-18;
+            }
+            var shape = new ImageShape({
+            style: {
+                image:iconImg,
+                x: shapeList[i].rotation[1]-9,
+                y: shapeY,
+                width:18,
+                height:18
+                
+            }  
+            });
+            shape.keyNo = shapeList[i]._echartsData._data.KeyNo;
+            shape.treeId = shapeList[i]._echartsData._data.treeId;
+            shape.zlevel = 1;
+            shape.z = 4;
+            shape.ndelete = true;
+            shape.clickcom = true;
+            shape.hoverable = true;
+            shape.clickable = true;
+            myChart.getZrender().addShape(shape);
+        }
+        if(shapeList[i]._echartsData&&shapeList[i]._echartsData._data.editable&&canEditRect&&!jietu){
+            var iconImg = '';
+            var isIE11 = (!!window.ActiveXObject || "ActiveXObject" in window);
+            if(isIE11){
+                iconImg = '/material/theme/chacha/cms/v2/images/tupu_delete.png';
+            }else{
+                iconImg = '/material/theme/chacha/cms/v2/images/tupu_delete.svg';
+            }
+            var shapeY = shapeList[i].rotation[2];
+            if(shapeList[i]._echartsData._data.isTouzi){
+                shapeY = shapeY - shapeList[i].style.height/2-9;
+            }else{
+                 shapeY = shapeY - shapeList[i].style.height/2-18+9;
+            }
+            var shape = new ImageShape({
+            style: {
+                image:iconImg,
+                x: shapeList[i].rotation[1]-9+72,
+                y: shapeY,
+                width:18,
+                height:18
+                
+            }  
+            });
+            shape.zlevel = 1;
+            shape.z = 20;
+            shape.keyNo = shapeList[i]._echartsData._data.KeyNo;
+            shape.treeId = shapeList[i]._echartsData._data.treeId;
+            shape.ndelete = true;
+            shape.editcom = true;
+            shape.hoverable = true;
+            shape.clickable = true;
+            myChart.getZrender().addShape(shape);
+        }
+        if(shapeList[i]._echartsData&&shapeList[i]._echartsData._data.kzr&&shapeList[i]._echartsData._data.syr){
+            var shape = new ImageShape({
+                style: {
+                    image:'/material/theme/chacha/cms/v2/images/tupu_kzrsbg.png',
+                    x: shapeList[i].rotation[1]-75,
+                    y: shapeList[i].rotation[2]-shapeList[i].style.height/2-38,
+                    width:150,
+                    height:44,
+                }, 
+                highlightStyle : {
+                  lineWidth :0,
+                  strokeColor:'#fff',
+                } 
+            });
+            var shapeText = new Text({
+                style: {
+                    x: shapeList[i].rotation[1],
+                    y: shapeList[i].rotation[2]-shapeList[i].style.height/2-18,
+                    textFont:'normal 11px 微软雅黑',
+                    text:'实际控制人\n'+'最终受益人：'+shapeList[i]._echartsData._data.syr,
+                    textAlign:'center',
+                    color : '#fff',
+                    lineWidth :0,
+                }, 
+                highlightStyle : {
+                  lineWidth :0,
+                  strokeColor:'rgba(255,255,255,0)',
+                } 
+            });
+            shape.ndelete = true;
+            shape.zlevel = 1;
+            shape.z = 8;
+            shape.hoverable = false;
+            shapeText.zlevel = 1;
+            shapeText.z = 10;
+            shapeText.ndelete = true;
+            shapeText.hoverable = false;
+            myChart.getZrender().addShape(shape);
+            myChart.getZrender().addShape(shapeText);
+        }else if(shapeList[i]._echartsData&&shapeList[i]._echartsData._data.kzr){
+            var shape = new ImageShape({
+                style: {
+                    image:'/material/theme/chacha/cms/v2/images/tupu_kzrbg.png',
+                    x: shapeList[i].rotation[1]-75,
+                    y: shapeList[i].rotation[2]-shapeList[i].style.height/2-24,
+                    width:150,
+                    height:30,
+                }, 
+                highlightStyle : {
+                  lineWidth :0,
+                  strokeColor:'rgba(255,255,255,0)',
+                } 
+            });
+            var shapeText = new Text({
+                style: {
+                    x: shapeList[i].rotation[1],
+                    y: shapeList[i].rotation[2]-shapeList[i].style.height/2-12,
+                    textFont:'normal 11px 微软雅黑',
+                    text:'实际控制人',
+                    textAlign:'center',
+                    color : '#fff',
+                    lineWidth :0,
+                }, 
+                highlightStyle : {
+                  lineWidth :0,
+                  color : '#F5A623' ,
+                  strokeColor:'rgba(255,255,255,0)',
+                } 
+            });
+            shape.ndelete = true;
+            shape.zlevel = 1;
+            shape.z = 8;
+            shape.hoverable = false;
+            shapeText.zlevel = 1;
+            shapeText.z = 10;
+            shapeText.ndelete = true;
+            shapeText.hoverable = false;
+            myChart.getZrender().addShape(shape);
+            myChart.getZrender().addShape(shapeText);
+
+        }else if(shapeList[i]._echartsData&&shapeList[i]._echartsData._data.syr){
+            var shape = new ImageShape({
+                style: {
+                    image:'/material/theme/chacha/cms/v2/images/tupu_syrbg.png',
+                    x: shapeList[i].rotation[1]-75,
+                    y: shapeList[i].rotation[2]-shapeList[i].style.height/2-24,
+                    width:150,
+                    height:30,
+                }, 
+                highlightStyle : {
+                  lineWidth :0,
+                  strokeColor:'rgba(255,255,255,0)',
+                } 
+            });
+            var shapeText = new Text({
+                style: {
+                    x: shapeList[i].rotation[1],
+                    y: shapeList[i].rotation[2]-shapeList[i].style.height/2-12,
+                    textFont:'normal 11px 微软雅黑',
+                    text:'最终受益人：'+shapeList[i]._echartsData._data.syr,
+                    textAlign:'center',
+                    color : '#fff',
+                    lineWidth :0,
+                }, 
+                highlightStyle : {
+                  lineWidth :0,
+                  color : '#F5A623' ,
+                  strokeColor:'rgba(255,255,255,0)',
+                } 
+            });
+            shape.ndelete = true;
+            shape.zlevel = 1;
+            shape.z = 8;
+            shape.hoverable = false;
+            shapeText.zlevel = 1;
+            shapeText.z = 10;
+            shapeText.ndelete = true;
+            shapeText.hoverable = false;
+            myChart.getZrender().addShape(shape);
+            myChart.getZrender().addShape(shapeText);
+
+        }
+        if(shapeList[i]._echartsData&&shapeList[i]._echartsData._data.kg){
+            var shapeY = shapeList[i].rotation[2]-shapeList[i].style.height/2-21.5;
+            if(shapeList[i]._echartsData._data.tag){
+                shapeY += 9;
+            }
+            var shapeX = shapeList[i].rotation[1] + 28 
+            if(shapeList[i]._echartsData._data.ratio){
+                shapeX += shapeList[i]._echartsData._data.ratio.length*10
+                if(shapeList[i]._echartsData._data.ratio.indexOf('.') != -1){
+                    shapeX -= 10;
+                }
+            }
+            var shapeText = new Text({
+                style: {
+                    x: shapeX,
+                    y: shapeY,
+                    textFont:'normal 11px 微软雅黑',
+                    text:'(控股)',
+                    textAlign:'center',
+                    color : '#FD485E',
+                    lineWidth :0,
+                }, 
+                highlightStyle : {
+                  lineWidth :0,
+                  color : '#FD485E' ,
+                  strokeColor:'rgba(255,255,255,0)',
+                } 
+            });
+            shapeText.zlevel = 1;
+            shapeText.z = 10;
+            shapeText.ndelete = true;
+            shapeText.hoverable = false;
+            myChart.getZrender().addShape(shapeText);
+        }
+        if(shapeList[i]._echartsData&&shapeList[i]._echartsData._data.tag){
+            shapeList[i].style.text = shapeList[i].style.text+'\n\n';
+            var shapeColor = '#FFECCE';
+            var shapeTextColor = '#F5A623';
+            if(shapeList[i]._echartsData._data.list){
+                shapeColor = '#DDF0FF';
+                shapeTextColor = '#128bed';
+            }
+
+            var shape = new Rectangle({
+                style: {
+                    x: shapeList[i].rotation[1]-72.5,
+                    y: shapeList[i].rotation[2]+shapeList[i].style.height/2-22.5,
+                    width:145,
+                    height:22,
+                    color:shapeColor,
+                }, 
+                highlightStyle : {
+                  lineWidth :0,
+                  color:'rgba(255,255,255,0)',
+                  strokeColor:'#fff',
+                } 
+            });
+            var shapeText = new Text({
+                style: {
+                    x: shapeList[i].rotation[1]-2,
+                    y: shapeList[i].rotation[2]+shapeList[i].style.height/2-12,
+                    textFont:'normal 12px 微软雅黑',
+                    text: shapeList[i]._echartsData._data.tag,
+                    textAlign:'center',
+                    color : shapeTextColor,
+                    fontSize:14,
+                    lineWidth :0,
+                }, 
+                highlightStyle : {
+                  lineWidth :0,
+                  color : shapeTextColor ,
+                  strokeColor:'rgba(255,255,255,0)',
+                } 
+            });
+            shape.zlevel = 1;
+            shape.z = 4;
+            shape.ndelete = true;
+            shape.hoverable = false;
+            shapeText.zlevel = 1;
+            shapeText.z = 5;
+            shapeText.ndelete = true;
+            shapeText.hoverable = false;
+            myChart.getZrender().addShape(shape);
+            myChart.getZrender().addShape(shapeText);
+        }
+    }
+
+    for(var i=0;i<myChart.getZrender().getWidth()+100;i+=300){
+        for(var j=0;j<myChart.getZrender().getHeight()+100;j+=228){
+            var shapeSy = new ImageShape({
+                style: {
+                    image:'/material/theme/chacha/cms/v2/images/shuiying2.png',
+                    x: i,
+                    y: j,
+                    width:300,
+                    height:228
+                }  
+            });
+            shapeSy.hoverable = false;
+            shapeSy.ndelete = true;
+            myChart.getZrender().addShape(shapeSy);
+        }
+    }
+}
+</script>  
+ </body>
+</html>
