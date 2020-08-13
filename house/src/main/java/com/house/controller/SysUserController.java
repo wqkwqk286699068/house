@@ -22,7 +22,7 @@ import com.house.service.SysUserService;
  * 用户控制器
  * 
  * @author wqk
- * @version 1.0
+ * @version 1.1
  */
 @RestController
 @RequestMapping("user")
