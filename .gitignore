@@ -13,3 +13,5 @@ yarn-error.log*
 *.ntvs*
 *.njsproj
 *.sln
+house/src/main/resources/static/static/
+house/src/main/resources/static/index.html
