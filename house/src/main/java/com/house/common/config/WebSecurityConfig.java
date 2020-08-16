@@ -18,7 +18,7 @@ import com.house.common.security.JwtAuthenticationFilter;
 import com.house.common.security.JwtAuthenticationProvider;
 
 /**
- * Spring Security Config
+ * 请求验证拦截
  * 
  * @author Louis
  * @date Nov 20, 2018

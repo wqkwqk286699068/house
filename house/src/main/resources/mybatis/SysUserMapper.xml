@@ -20,9 +20,14 @@
 		<result column="last_update_time" jdbcType="TIMESTAMP"
 			property="lastUpdateTime" />
 		<result column="del_flag" jdbcType="TINYINT" property="delFlag" />
+		<result column="house_source" jdbcType="TINYINT"
+			property="houseSource" />
+		<result column="house_address" jdbcType="TINYINT"
+			property="houseAddress" />
 	</resultMap>
 	<sql id="Base_Column_List">
-		id, name, password, salt, email, mobile, status, dept_id, create_by,
+		id, name, password, salt, email, mobile, status, dept_id,
+		create_by,
 		create_time,
 		last_update_by, last_update_time, del_flag
 	</sql>
@@ -34,25 +39,59 @@
 		where id = #{id,jdbcType=BIGINT}
 	</select>
 	<delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
-		delete from sys_user
+		delete from
+		sys_user
 		where id = #{id,jdbcType=BIGINT}
 	</delete>
+	<delete id="deleteHouseSource" parameterType="java.lang.Long">
+		delete from
+		sys_house
+		where user_id = #{id}
+	</delete>
 	<insert id="insert" parameterType="com.house.model.SysUser">
-		insert into sys_user (id, name, password,
+		insert into sys_user (id,
+		name, password,
 		salt, email, mobile,
 		status, dept_id, create_by,
 		create_time, last_update_by, last_update_time,
 		del_flag)
-		values (#{id,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR},
+		values
+		(#{id,jdbcType=BIGINT}, #{name,jdbcType=VARCHAR},
 		#{password,jdbcType=VARCHAR},
-		#{salt,jdbcType=VARCHAR}, #{email,jdbcType=VARCHAR}, #{mobile,jdbcType=VARCHAR},
+		#{salt,jdbcType=VARCHAR},
+		#{email,jdbcType=VARCHAR}, #{mobile,jdbcType=VARCHAR},
 		#{status,jdbcType=TINYINT}, #{deptId,jdbcType=BIGINT},
 		#{createBy,jdbcType=BIGINT},
-		#{createTime,jdbcType=TIMESTAMP}, #{lastUpdateBy,jdbcType=BIGINT},
+		#{createTime,jdbcType=TIMESTAMP},
+		#{lastUpdateBy,jdbcType=BIGINT},
 		#{lastUpdateTime,jdbcType=TIMESTAMP},
 		#{delFlag,jdbcType=TINYINT})
 	</insert>
-	<insert id="insertSelective"
+
+	<insert id="insertHouseSource" useGeneratedKeys="true" keyProperty="house_id" keyColumn="id"
+		parameterType="com.house.model.SysUser" >
+		insert into sys_house
+		<trim prefix="(" suffix=")" suffixOverrides=",">
+			<if test="houseSource != null">
+				house_source,
+			</if>
+			<if test="houseAddress != null">
+				house_address,
+			</if>
+			user_id
+		</trim>
+		<trim prefix="values (" suffix=")" suffixOverrides=",">
+			<if test="houseSource != null">
+				#{houseSource},
+			</if>
+			<if test="houseAddress != null">
+				#{houseAddress},
+			</if>
+			#{id}
+		</trim>
+	</insert>
+
+	<insert id="insertSelective" useGeneratedKeys="true" keyProperty="id"
 		parameterType="com.house.model.SysUser">
 		insert into sys_user
 		<trim prefix="(" suffix=")" suffixOverrides=",">
@@ -140,73 +179,92 @@
 	</insert>
 	<update id="updateByPrimaryKeySelective"
 		parameterType="com.house.model.SysUser">
-		update sys_user
+		update sys_user u,sys_house h
 		<set>
 			<if test="name != null">
-				name = #{name,jdbcType=VARCHAR},
+				u.name = #{name,jdbcType=VARCHAR},
 			</if>
 			<if test="password != null">
-				password = #{password,jdbcType=VARCHAR},
+				u.password = #{password,jdbcType=VARCHAR},
 			</if>
 			<if test="salt != null">
-				salt = #{salt,jdbcType=VARCHAR},
+				u.salt = #{salt,jdbcType=VARCHAR},
 			</if>
 			<if test="email != null">
-				email = #{email,jdbcType=VARCHAR},
+				u.email = #{email,jdbcType=VARCHAR},
 			</if>
 			<if test="mobile != null">
-				mobile = #{mobile,jdbcType=VARCHAR},
+				u.mobile = #{mobile,jdbcType=VARCHAR},
 			</if>
 			<if test="status != null">
-				status = #{status,jdbcType=TINYINT},
+				u.status = #{status,jdbcType=TINYINT},
 			</if>
 			<if test="deptId != null">
-				dept_id = #{deptId,jdbcType=BIGINT},
+				u.dept_id = #{deptId,jdbcType=BIGINT},
 			</if>
 			<if test="createBy != null">
-				create_by = #{createBy,jdbcType=BIGINT},
+				u.create_by = #{createBy,jdbcType=BIGINT},
 			</if>
 			<if test="createTime != null">
-				create_time = #{createTime,jdbcType=TIMESTAMP},
+				u.create_time = #{createTime,jdbcType=TIMESTAMP},
 			</if>
 			<if test="lastUpdateBy != null">
-				last_update_by = #{lastUpdateBy,jdbcType=BIGINT},
+				u.last_update_by = #{lastUpdateBy,jdbcType=BIGINT},
 			</if>
 			<if test="lastUpdateTime != null">
-				last_update_time = #{lastUpdateTime,jdbcType=TIMESTAMP},
+				u.last_update_time =
+				#{lastUpdateTime,jdbcType=TIMESTAMP},
 			</if>
 			<if test="delFlag != null">
-				del_flag = #{delFlag,jdbcType=TINYINT},
+				u.del_flag = #{delFlag,jdbcType=TINYINT},
+			</if>
+			<if test="houseSource != null">
+				h.house_source = #{houseSource},
+			</if>
+			<if test="houseAddress != null">
+				h.house_address = #{houseAddress},
 			</if>
 		</set>
-		where id = #{id,jdbcType=BIGINT}
+		where u.id = #{id} and u.id = h.user_id
 	</update>
 	<update id="updateByPrimaryKey"
 		parameterType="com.house.model.SysUser">
 		update sys_user
 		set name = #{name,jdbcType=VARCHAR},
 		password = #{password,jdbcType=VARCHAR},
-		salt = #{salt,jdbcType=VARCHAR},
+		salt =
+		#{salt,jdbcType=VARCHAR},
 		email = #{email,jdbcType=VARCHAR},
-		mobile = #{mobile,jdbcType=VARCHAR},
+		mobile =
+		#{mobile,jdbcType=VARCHAR},
 		status = #{status,jdbcType=TINYINT},
 		dept_id = #{deptId,jdbcType=BIGINT},
-		create_by = #{createBy,jdbcType=BIGINT},
-		create_time = #{createTime,jdbcType=TIMESTAMP},
-		last_update_by = #{lastUpdateBy,jdbcType=BIGINT},
-		last_update_time = #{lastUpdateTime,jdbcType=TIMESTAMP},
-		del_flag = #{delFlag,jdbcType=TINYINT}
+		create_by =
+		#{createBy,jdbcType=BIGINT},
+		create_time =
+		#{createTime,jdbcType=TIMESTAMP},
+		last_update_by =
+		#{lastUpdateBy,jdbcType=BIGINT},
+		last_update_time =
+		#{lastUpdateTime,jdbcType=TIMESTAMP},
+		del_flag =
+		#{delFlag,jdbcType=TINYINT}
 		where id = #{id,jdbcType=BIGINT}
 	</update>
 	<select id="findPage" resultMap="BaseResultMap">
-		select u.*, (select d.name from sys_dept d where d.id = u.dept_id) deptName
-		from sys_user u
+		select u.*, (select d.name from
+		sys_dept d where d.id = u.dept_id)
+		deptName,h.house_source,h.house_address
+		from sys_user u inner join
+		sys_house h on u.id = h.user_id
 	</select>
 	<select id="findByName" parameterType="java.lang.String"
 		resultMap="BaseResultMap">
-		select u.*, (select d.name from sys_dept d where d.id = u.dept_id) deptName
+		select u.*, (select d.name from sys_dept d where d.id =
+		u.dept_id) deptName
 		from sys_user u
-		where u.name = #{name,jdbcType=VARCHAR}
+		where u.name =
+		#{name,jdbcType=VARCHAR}
 	</select>
 	<select id="findPageByName" parameterType="java.lang.String"
 		resultMap="BaseResultMap">
@@ -222,6 +280,7 @@
 		select u.*, (select d.name from sys_dept d where d.id = u.dept_id)
 		deptName from sys_user u
 		where u.name like #{patternName}
-		and u.email like #{patternEmail}
+		and u.email
+		like #{patternEmail}
 	</select>
 </mapper>

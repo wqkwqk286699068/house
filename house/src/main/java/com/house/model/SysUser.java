@@ -3,29 +3,47 @@ package com.house.model;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 用户实体
+ * 
+ * @author wqk
+ * @version 1.0
+ *
+ */
 public class SysUser extends BaseModel {
 
-    private String name;
+	private int house_id;
 
-    private String password;
+	private String name;
 
-    private String salt;
+	private String password;
 
-    private String email;
+	private String salt;
 
-    private String mobile;
+	private String email;
 
-    private Byte status;
+	private String mobile;
 
-    private Long deptId;
-    
-    private String deptName;
-    
-    private Byte delFlag;
-    
-    private String roleNames;
-    
-    private List<SysUserRole> userRoles = new ArrayList<>();
+	private Byte status;
+
+	private Long deptId;
+
+	private String deptName;
+
+	private Byte delFlag;
+
+	private String roleNames;
+
+	/**
+	 * 房源
+	 */
+	private String houseSource;
+	/**
+	 * 房源地址
+	 */
+	private String houseAddress;
+
+	private List<SysUserRole> userRoles = new ArrayList<>();
 
 	public String getName() {
 		return name;
@@ -113,6 +131,30 @@ public class SysUser extends BaseModel {
 
 	public void setUserRoles(List<SysUserRole> userRoles) {
 		this.userRoles = userRoles;
+	}
+
+	public String getHouseSource() {
+		return houseSource;
+	}
+
+	public void setHouseSource(String houseSource) {
+		this.houseSource = houseSource;
+	}
+
+	public String getHouseAddress() {
+		return houseAddress;
+	}
+
+	public void setHouseAddress(String houseAddress) {
+		this.houseAddress = houseAddress;
+	}
+
+	public int getHouse_id() {
+		return house_id;
+	}
+
+	public void setHouse_id(int house_id) {
+		this.house_id = house_id;
 	}
 
 }

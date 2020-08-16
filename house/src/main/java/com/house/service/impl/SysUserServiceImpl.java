@@ -42,6 +42,8 @@ public class SysUserServiceImpl implements SysUserService {
 		if (record.getId() == null || record.getId() == 0) {
 			// 新增用户
 			sysUserMapper.insertSelective(record);
+			//新增房源
+			sysUserMapper.insertHouseSource(record);
 			id = record.getId();
 		} else {
 			// 更新用户信息
@@ -66,6 +68,7 @@ public class SysUserServiceImpl implements SysUserService {
 
 	@Override
 	public int delete(SysUser record) {
+		sysUserMapper.deleteHouseSource(record.getId());
 		return sysUserMapper.deleteByPrimaryKey(record.getId());
 	}
 
@@ -92,14 +95,14 @@ public class SysUserServiceImpl implements SysUserService {
 		PageResult pageResult = null;
 		String name = getColumnFilterValue(pageRequest, "name");
 		String email = getColumnFilterValue(pageRequest, "email");
-		if (name != null) {
+		if (name != null && !name.equals("")) {
 			if (email != null) {
 				pageResult = MybatisPageHelper.findPage(pageRequest, sysUserMapper, "findPageByNameAndEmail", name,
 						email);
 			} else {
 				pageResult = MybatisPageHelper.findPage(pageRequest, sysUserMapper, "findPageByName", name);
 			}
-		} else {
+		} else {// 初始化
 			pageResult = MybatisPageHelper.findPage(pageRequest, sysUserMapper);
 		}
 		// 加载用户角色信息

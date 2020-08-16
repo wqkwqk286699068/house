@@ -1,3 +1,3 @@
 F:
-cd 培训入职\myworkspace\house-ui
+cd 房屋管理项目\system_house\house-ui
 npm run dev

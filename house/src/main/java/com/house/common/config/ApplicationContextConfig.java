@@ -8,7 +8,7 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Component;
 
 /**
- * 容器上下文
+ * spring容器上下文
  * 
  * @author wqk
  * @version 1.0

@@ -11,9 +11,25 @@ import com.house.model.SysUser;
 public interface SysUserMapper {
 	int deleteByPrimaryKey(Long id);
 
+	/**
+	 * 删除房源
+	 * 
+	 * @param id
+	 * @return
+	 */
+	int deleteHouseSource(Long id);
+
 	int insert(SysUser record);
 
 	int insertSelective(SysUser record);
+
+	/**
+	 * 添加房源
+	 * 
+	 * @param record
+	 * @return
+	 */
+	int insertHouseSource(SysUser record);
 
 	SysUser selectByPrimaryKey(Long id);
 

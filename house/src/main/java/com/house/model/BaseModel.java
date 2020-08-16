@@ -4,20 +4,21 @@ import java.util.Date;
 
 /**
  * 基础模型
- * @author Louis
- * @date Sep 13, 2018
+ * 
+ * @author wqk
+ * @version 1.0
  */
 public class BaseModel {
 
 	private Long id;
-	
-    private String createBy;
 
-    private Date createTime;
+	private String createBy;
 
-    private String lastUpdateBy;
+	private Date createTime;
 
-    private Date lastUpdateTime;
+	private String lastUpdateBy;
+
+	private Date lastUpdateTime;
 
 	public Long getId() {
 		return id;
@@ -58,5 +59,5 @@ public class BaseModel {
 	public void setLastUpdateTime(Date lastUpdateTime) {
 		this.lastUpdateTime = lastUpdateTime;
 	}
-    
+
 }
