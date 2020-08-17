@@ -96,7 +96,7 @@ export default {
         });
     },
     refreshCaptcha: function(){
-      this.loginForm.src = this.global.baseUrl + "/captcha.jpg?t=" + new Date().getTime();
+      this.loginForm.src = this.base_Url + "/captcha.jpg?t=" + new Date().getTime();
     },
     reset() {
       this.$refs.loginForm.resetFields()

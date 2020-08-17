@@ -6,6 +6,8 @@
 
 // 后台管理系统服务器地址
 export const baseUrl = 'http://localhost:8080'
+//生产地址
+export const baseUrl_pro = 'http://188.131.143.167:8080'
 // 系统数据备份还原服务器地址
 export const backupBaseUrl = 'http://localhost:8002'
 
